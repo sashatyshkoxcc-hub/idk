@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d1723" />
+  <title>Bot Panel — Telegram Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div id="app" class="app-shell app-shell--boot">
+    <section id="loginView" class="login-view" hidden>
+      <div class="login-card glass-card">
+        <div class="brand-mark">♜</div>
+        <h1>Bot Panel</h1>
+        <p>Войди в панель управления Telegram-ботом</p>
+        <form id="loginForm" class="login-form">
+          <label>
+            <span>Логин</span>
+            <input id="loginInput" name="login" autocomplete="username" placeholder="Chelik" required />
+          </label>
+          <label>
+            <span>Пароль</span>
+            <input id="passwordInput" name="password" autocomplete="current-password" placeholder="••••••••" type="password" required />
+          </label>
+          <button class="primary-btn" type="submit">Войти</button>
+          <div id="loginError" class="form-error" role="alert"></div>
+        </form>
+      </div>
+    </section>
+
+    <section id="dashboardView" class="dashboard" hidden>
+      <aside id="leftPane" class="sidebar pane">
+        <header class="topbar topbar--sidebar">
+          <button id="mobileMenuClose" class="icon-btn only-mobile" title="Закрыть">✕</button>
+          <div class="brand-row"><span class="shield">⬡</span><strong>Bot Panel</strong></div>
+          <nav class="main-nav">
+            <button id="navUsersBtn" class="nav-btn">♙ Пользователи</button>
+            <button id="navLogsBtn" class="nav-btn">▤ Логи</button>
+            <button id="logoutBtn" class="nav-btn">Выйти</button>
+          </nav>
+        </header>
+
+        <div class="search-wrap">
+          <span>⌕</span>
+          <input id="chatSearch" placeholder="Поиск чатов" autocomplete="off" />
+        </div>
+
+        <div id="chatList" class="chat-list" aria-label="Список чатов"></div>
+      </aside>
+
+      <main class="chat-pane pane">
+        <header class="topbar chat-header">
+          <button id="mobileMenuOpen" class="icon-btn only-mobile" title="Чаты">☰</button>
+          <div id="activeChatAvatar" class="avatar avatar--chat">✦</div>
+          <div class="chat-title-block">
+            <strong id="activeChatTitle">Выбери чат</strong>
+            <span id="activeChatMeta">Сообщения и участники появятся здесь</span>
+          </div>
+          <div class="header-actions">
+            <button id="refreshBtn" class="icon-btn" title="Обновить">↻</button>
+            <button id="toggleMembersBtn" class="icon-btn only-mobile" title="Участники">👥</button>
+          </div>
+        </header>
+
+        <section id="emptyState" class="empty-state">
+          <div class="empty-orb">✦</div>
+          <h2>Telegram UI для панели бота</h2>
+          <p>Адаптивный интерфейс для ПК и телефона: чаты, сообщения, участники, профили, модерация, файлы и медиа-плееры.</p>
+        </section>
+
+        <section id="messagesWrap" class="messages-wrap" hidden>
+          <div id="messages" class="messages"></div>
+        </section>
+
+        <footer id="composer" class="composer" hidden>
+          <input id="fileInput" type="file" multiple accept="image/*,video/*,audio/*,.gif,.webp,.webm,.mp4,.mp3,.ogg,.pdf,.zip,.rar,.7z,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.json,.tgs" hidden />
+          <button id="attachBtn" class="icon-btn attach-btn" title="Прикрепить файл">📎</button>
+          <div id="replyPreview" class="reply-preview" hidden>
+            <div><b>Ответ</b><span id="replyText"></span></div>
+            <button id="cancelReplyBtn" class="icon-btn">✕</button>
+          </div>
+          <textarea id="messageInput" rows="1" maxlength="4096" placeholder="Написать сообщение..."></textarea>
+          <button id="sendBtn" class="send-btn" title="Отправить">➤</button>
+        </footer>
+      </main>
+
+      <aside id="rightPane" class="details pane">
+        <section class="settings-card">
+          <h3>Настройки</h3>
+          <div id="settingsList" class="settings-list"></div>
+        </section>
+        <section class="members-card">
+          <div class="section-title">
+            <h3 id="membersTitle">Участники</h3>
+            <button id="closeMembersBtn" class="icon-btn only-mobile">✕</button>
+          </div>
+          <div id="membersList" class="members-list"></div>
+        </section>
+      </aside>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <dialog id="profileDialog" class="profile-dialog">
+      <form method="dialog" class="profile-card">
+        <button class="dialog-close" value="close">✕</button>
+        <div class="profile-head">
+          <div id="profileAvatar" class="avatar avatar--xl">?</div>
+          <div>
+            <h2 id="profileName">Профиль</h2>
+            <p id="profileUsername"></p>
+          </div>
+        </div>
+        <div class="profile-grid">
+          <div><span>User ID</span><strong id="profileUserId">—</strong></div>
+          <div><span>Сообщений</span><strong id="profileCount">—</strong></div>
+          <div><span>Последняя активность</span><strong id="profileLastSeen">—</strong></div>
+          <div><span>Статус</span><strong id="profileStatus">Участник</strong></div>
+        </div>
+        <div class="profile-actions">
+          <button id="muteBtn" type="button" class="warning-btn">Замутить</button>
+          <button id="unmuteBtn" type="button" class="soft-btn">Размутить</button>
+          <button id="banBtn" type="button" class="danger-btn">Забанить</button>
+          <button id="unbanBtn" type="button" class="soft-btn">Разбанить</button>
+        </div>
+        <p class="hint">Разбан будет отправлен как action=unban. Если backend ещё не поддерживает его, появится ошибка Telegram/API.</p>
+      </form>
+    </dialog>
+
+    <dialog id="panelDialog" class="panel-dialog">
+      <form method="dialog" class="panel-card">
+        <button class="dialog-close" value="close">✕</button>
+        <h2 id="panelTitle">Панель</h2>
+        <div id="panelContent" class="panel-content"></div>
+      </form>
+    </dialog>
+  </div>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>
