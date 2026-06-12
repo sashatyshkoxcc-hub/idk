@@ -74,6 +74,12 @@ function formatBytes(bytes = 0) {
   return `${(value / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
+
+function syncViewportHeight() {
+  const height = window.visualViewport?.height || window.innerHeight;
+  document.documentElement.style.setProperty('--app-height', `${height}px`);
+}
+
 function toast(text, type = 'ok') {
   els.toast.textContent = text;
   els.toast.className = `toast show ${type === 'error' ? 'error' : ''}`;
@@ -383,9 +389,11 @@ function closeStream() {
 function renderReply() {
   if (!state.replyTo) {
     els.replyPreview.hidden = true;
+    els.composer.classList.remove('composer--replying');
     return;
   }
   els.replyPreview.hidden = false;
+  els.composer.classList.add('composer--replying');
   els.replyText.textContent = `#${state.replyTo.message_id}: ${state.replyTo.text || state.replyTo.file_name || contentMeta(contentTypeOf(state.replyTo)).label}`;
 }
 
@@ -510,14 +518,71 @@ async function moderate(action) {
   }
 }
 
+const PANEL_PERMISSIONS = [
+  ['manage_users', 'Создавать пользователей'],
+  ['manage_passwords', 'Задавать пароли'],
+  ['manage_permissions', 'Выдавать права'],
+  ['view_logs', 'Смотреть логи'],
+  ['manage_chats', 'Управлять чатами'],
+];
+
+function permissionText(user = {}) {
+  const raw = user.permissions || user.rights || user.capabilities || [];
+  const list = Array.isArray(raw) ? raw : Object.entries(raw).filter(([, enabled]) => Boolean(enabled)).map(([key]) => key);
+  const labels = list.map((key) => PANEL_PERMISSIONS.find(([id]) => id === key)?.[1] || key);
+  if (user.is_default) labels.unshift('полные права');
+  return labels.length ? labels.join(', ') : 'права не указаны';
+}
+
+function userCreatePanel() {
+  const checks = PANEL_PERMISSIONS.map(([id, label]) => `
+    <label class="check-row"><input type="checkbox" data-permission="${escapeHtml(id)}" checked><span>${escapeHtml(label)}</span></label>`).join('');
+  return `<section class="user-create-card">
+    <h3>Создать пользователя</h3>
+    <div class="user-create-grid">
+      <label><span>Логин</span><input id="newUserLogin" autocomplete="off" placeholder="login"></label>
+      <label><span>Пароль</span><input id="newUserPassword" autocomplete="new-password" placeholder="пароль" type="password"></label>
+    </div>
+    <div class="permissions-grid">${checks}</div>
+    <button id="createUserBtn" type="button" class="primary-btn">Создать пользователя с выбранными правами</button>
+    <p class="hint">Дефолтный пользователь считается главным: ему доступны создание пользователей, назначение паролей, прав и возможностей.</p>
+  </section>`;
+}
+
+function renderUsersPanel(users) {
+  const rows = users.map((u) => `<div class="table-row user-row"><strong>${escapeHtml(u.name || u.login || u.username || u.id)}</strong><span>${escapeHtml(u.login || u.username || '')}${u.is_default ? ' · главный' : ''}</span><small>${escapeHtml(permissionText(u))}<br>${escapeHtml(formatDate(u.created_at || u.created || u.ts))}</small></div>`).join('') || '<div class="member-user">Пользователей нет</div>';
+  els.panelContent.innerHTML = `${userCreatePanel()}<section class="users-list-card"><h3>Существующие пользователи</h3>${rows}</section>`;
+}
+
 async function showUsersPanel() {
   els.panelTitle.textContent = 'Пользователи панели';
   els.panelContent.innerHTML = 'Загрузка...';
   els.panelDialog.showModal();
   try {
     const users = normalizeArray(await api('/api/auth/users'), ['users']);
-    els.panelContent.innerHTML = users.map((u) => `<div class="table-row"><strong>${escapeHtml(u.name || u.login || u.username || u.id)}</strong><span>${escapeHtml(u.login || u.username || '')}${u.is_default ? ' · главный' : ''}</span><small>${escapeHtml(formatDate(u.created_at || u.created || u.ts))}</small></div>`).join('') || 'Пользователей нет';
-  } catch (err) { els.panelContent.innerHTML = `<div class="form-error">${escapeHtml(err.message)}</div>`; }
+    renderUsersPanel(users);
+  } catch (err) { els.panelContent.innerHTML = `${userCreatePanel()}<div class="form-error">${escapeHtml(err.message)}</div>`; }
+}
+
+async function createPanelUser() {
+  const login = $('#newUserLogin')?.value.trim();
+  const password = $('#newUserPassword')?.value;
+  const permissions = $$('[data-permission]', els.panelContent).filter((input) => input.checked).map((input) => input.dataset.permission);
+  if (!login || !password) { toast('Укажи логин и пароль', 'error'); return; }
+  const btn = $('#createUserBtn');
+  if (btn) btn.disabled = true;
+  try {
+    await api('/api/auth/users', {
+      method: 'POST',
+      body: JSON.stringify({ login, password, permissions, rights: permissions, capabilities: permissions, is_default_allowed: true }),
+    });
+    toast('Пользователь создан');
+    await showUsersPanel();
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 async function showLogsPanel() {
@@ -581,6 +646,9 @@ function autoGrow() {
 }
 
 function bindEvents() {
+  syncViewportHeight();
+  window.addEventListener('resize', syncViewportHeight);
+  window.visualViewport?.addEventListener('resize', syncViewportHeight);
   els.loginForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     els.loginError.textContent = '';
@@ -665,6 +733,9 @@ function bindEvents() {
   els.logoutBtn.addEventListener('click', async () => { await api('/api/auth/logout', { method: 'POST' }).catch(() => null); location.reload(); });
   els.navUsersBtn.addEventListener('click', showUsersPanel);
   els.navLogsBtn.addEventListener('click', showLogsPanel);
+  els.panelContent.addEventListener('click', (event) => {
+    if (event.target.closest('#createUserBtn')) createPanelUser();
+  });
 
   els.muteBtn.addEventListener('click', () => moderate('mute'));
   els.unmuteBtn.addEventListener('click', () => moderate('unmute'));
