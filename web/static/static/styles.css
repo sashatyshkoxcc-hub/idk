@@ -36,7 +36,7 @@ button { color: inherit; }
 button:disabled { opacity: .55; cursor: not-allowed; }
 [hidden] { display: none !important; }
 
-.app-shell { height: 100vh; min-height: 100dvh; }
+.app-shell { height: var(--app-height, 100dvh); min-height: var(--app-height, 100dvh); }
 .app-shell--boot::before {
   content: "Загрузка панели...";
   position: fixed; inset: 0;
@@ -92,7 +92,7 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .sidebar, .details { background: rgb(18 31 45 / 88%); }
 .sidebar { border-right: 1px solid var(--line); display: flex; flex-direction: column; }
 .details { border-left: 1px solid var(--line); overflow: auto; }
-.chat-pane { display: grid; grid-template-rows: 58px 1fr auto; min-width: 0; background: rgb(9 17 29 / 76%); }
+.chat-pane { display: grid; grid-template-rows: 58px minmax(0, 1fr) auto; min-width: 0; background: rgb(9 17 29 / 76%); }
 .topbar { min-height: 58px; display: flex; align-items: center; gap: 12px; padding: 0 16px; border-bottom: 1px solid var(--line); background: rgb(18 31 45 / 86%); }
 .topbar--sidebar { justify-content: space-between; gap: 10px; }
 .brand-row { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
@@ -180,17 +180,19 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .doc-sub { color: var(--muted); font-size: 12px; }
 
 .composer {
-  position: relative; display: grid; grid-template-columns: 42px 1fr 50px; align-items: end; gap: 8px;
+  position: relative; display: grid; grid-template-columns: 42px minmax(0, 1fr) 50px; grid-template-areas: "attach input send"; align-items: end; gap: 8px;
   padding: 8px 12px calc(8px + var(--safe-bottom)); border-top: 1px solid var(--line); background: rgb(18 31 45 / 94%);
 }
-.composer textarea { resize: none; min-height: 42px; max-height: 140px; padding: 11px 14px; line-height: 1.35; }
-.send-btn { width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), var(--blue2)); }
+.composer.composer--replying { grid-template-areas: "attach reply send" "attach input send"; }
+.attach-btn { grid-area: attach; }
+.composer textarea { grid-area: input; resize: none; min-width: 0; min-height: 42px; max-height: 140px; padding: 11px 14px; line-height: 1.35; }
+.send-btn { grid-area: send; width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), var(--blue2)); }
 .reply-preview {
-  grid-column: 2 / 3; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  grid-area: reply; min-width: 0; display: flex; justify-content: space-between; align-items: center; gap: 10px;
   background: rgb(78 161 255 / 10%); border-left: 3px solid var(--blue); border-radius: 10px; padding: 7px 9px; color: var(--muted);
 }
 .reply-preview b { display: block; color: var(--blue); font-size: 12px; }
-.reply-preview span { display: block; max-width: 55vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reply-preview span { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .settings-card, .members-card { border-bottom: 1px solid var(--line); padding: 16px; }
 .settings-card h3, .members-card h3 { margin: 0 0 12px; text-transform: uppercase; letter-spacing: .12em; font-size: 12px; color: #a8c7ee; }
@@ -226,11 +228,22 @@ dialog::backdrop { background: rgb(0 0 0 / 55%); backdrop-filter: blur(5px); }
 .danger-btn { background: rgb(255 98 98 / 18%); color: #ffc0c0; }
 .soft-btn { background: rgb(78 161 255 / 14%); color: #cce4ff; }
 .hint { color: var(--muted); font-size: 12px; line-height: 1.45; margin: 14px 0 0; }
-.panel-card { width: min(780px, calc(100vw - 26px)); max-height: min(780px, calc(100vh - 30px)); overflow: auto; }
+.panel-card { width: min(780px, calc(100vw - 26px)); max-height: min(780px, calc(100dvh - 30px)); overflow: auto; }
 .panel-content { display: grid; gap: 10px; }
 .table-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: center; background: var(--card); padding: 10px; border-radius: 12px; }
 .log-row { background: var(--card); border-radius: 12px; padding: 10px; display: grid; gap: 5px; }
 .log-row small { color: var(--muted); }
+
+.user-create-card, .users-list-card { display: grid; gap: 12px; background: rgb(255 255 255 / 4%); border: 1px solid rgb(255 255 255 / 7%); border-radius: 16px; padding: 14px; }
+.user-create-card h3, .users-list-card h3 { margin: 0; color: #a8c7ee; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; }
+.user-create-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.user-create-grid label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; }
+.user-create-grid input { width: 100%; color: var(--text); background: var(--card); border: 1px solid transparent; border-radius: 12px; padding: 10px 12px; outline: none; }
+.user-create-grid input:focus { border-color: rgb(78 161 255 / 55%); }
+.permissions-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.check-row { display: flex; align-items: center; gap: 8px; color: var(--text); font-size: 13px; }
+.check-row input { accent-color: var(--blue); }
+.user-row small { color: var(--muted); line-height: 1.45; }
 
 @media (max-width: 1180px) {
   .dashboard { grid-template-columns: 310px minmax(0, 1fr); }
@@ -248,15 +261,16 @@ dialog::backdrop { background: rgb(0 0 0 / 55%); backdrop-filter: blur(5px); }
   .topbar--sidebar .only-mobile { display: grid; }
   .main-nav { gap: 2px; }
   .nav-btn { font-size: 12px; padding: 7px 6px; }
-  .chat-pane { grid-template-rows: 56px 1fr auto; }
+  .chat-pane { grid-template-rows: 56px minmax(0, 1fr) auto; height: var(--app-height, 100dvh); }
   .messages { padding: 18px 8px 18px; gap: 8px; }
   .message-row { max-width: 100%; grid-template-columns: 34px minmax(0, 1fr); gap: 7px; }
   .bubble { max-width: calc(100vw - 60px); }
   .message-row.own .bubble { max-width: calc(100vw - 24px); }
-  .composer { grid-template-columns: 38px 1fr 44px; padding-left: 7px; padding-right: 7px; }
+  .composer { grid-template-columns: 38px minmax(0, 1fr) 44px; padding-left: 7px; padding-right: 7px; padding-bottom: calc(12px + var(--safe-bottom)); }
+  #logoutBtn { display: none; }
   .audio-player, .doc-card { min-width: min(330px, 74vw); }
   .profile-grid, .profile-actions { grid-template-columns: 1fr 1fr; }
-  .table-row { grid-template-columns: 1fr; }
+  .table-row, .user-create-grid, .permissions-grid { grid-template-columns: 1fr; }
 }
 
 .icon-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
@@ -297,14 +311,14 @@ dialog::backdrop { background: rgb(0 0 0 / 55%); backdrop-filter: blur(5px); }
 .video-progress { accent-color: var(--blue); min-width: 90px; }
 .video-time { color: var(--muted); font-size: 12px; white-space: nowrap; }
 
-.media-viewer { width: 100vw; max-width: none; height: 100vh; max-height: none; }
+.media-viewer { width: 100vw; max-width: none; height: 100dvh; max-height: none; }
 .media-viewer::backdrop { background: rgb(0 0 0 / 78%); backdrop-filter: blur(8px); }
 .media-viewer-card { position: fixed; inset: 0; display: grid; place-items: center; padding: 54px 20px 24px; }
 .media-viewer-card .dialog-close { z-index: 3; right: 22px; top: 18px; }
-.media-viewer-body { max-width: min(1120px, 96vw); max-height: 88vh; display: grid; place-items: center; }
-.viewer-image { max-width: min(1120px, 96vw); max-height: 88vh; border-radius: 18px; box-shadow: var(--shadow); object-fit: contain; }
+.media-viewer-body { max-width: min(1120px, 96vw); max-height: 88dvh; display: grid; place-items: center; }
+.viewer-image { max-width: min(1120px, 96vw); max-height: 88dvh; border-radius: 18px; box-shadow: var(--shadow); object-fit: contain; }
 .viewer-video { width: min(1120px, 96vw); border-radius: 18px; box-shadow: var(--shadow); }
-.viewer-video video { max-height: 82vh; }
+.viewer-video video { max-height: 82dvh; }
 
 .upload-card { width: min(420px, calc(100vw - 26px)); padding: 16px 26px 16px; border-radius: 4px; background: #172536; border: 1px solid var(--line); box-shadow: var(--shadow); color: var(--text); }
 .upload-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
